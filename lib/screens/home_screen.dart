@@ -264,7 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       safePrint('Accepting call: $callId, channel: $channelName');
 
-      // Update call with volunteer info
+      // --- CHANGE 1: MARK AS BUSY (UNAVAILABLE) ---
+      await _updateAvailabilityStatus(false);
+
+      // Update call record in DynamoDB
       const updateMutation = r'''
         mutation UpdateCall($input: UpdateCallInput!) {
           updateCall(input: $input) {
@@ -288,18 +291,19 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      final response = await Amplify.API.mutate(request: request).response;
-      safePrint('✅ Accept call response: ${response.data}');
+      await Amplify.API.mutate(request: request).response;
 
       if (!mounted) return;
 
-      // Remove from incoming calls list
+      // Remove from incoming calls list locally
       setState(() {
         _incomingCalls.removeWhere((c) => c['id'] == callId);
       });
 
-      // Navigate to video call
-      Navigator.of(context).push(
+      // --- CHANGE 2: NAVIGATE AND WAIT ---
+      // We use 'await' here. The code below this line will ONLY run
+      // after the VideoCallScreen is closed (call ended).
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => VideoCallScreen(
             channelName: channelName,
@@ -308,8 +312,27 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
+
+      // --- CHANGE 3: MARK AS AVAILABLE AGAIN ---
+      // This runs immediately after the volunteer hangs up (leaves the screen)
+      if (mounted) {
+        safePrint('Call ended, making volunteer available again...');
+        await _updateAvailabilityStatus(true);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('✅ Call ended. You are available again.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
     } catch (e) {
       safePrint('❌ Error accepting call: $e');
+      // If it fails, try to reset status to available just in case
+      _updateAvailabilityStatus(true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -604,5 +627,31 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+  // Add this inside _HomeScreenState
+  Future<void> _updateAvailabilityStatus(bool status) async {
+    try {
+      // 1. Update Local UI immediately
+      setState(() {
+        _isAvailable = status;
+      });
+
+      // 2. Update Backend
+      if (_volunteer != null) {
+        final updatedVolunteer = _volunteer!.copyWith(isAvailableNow: status);
+
+        final request = ModelMutations.update(updatedVolunteer);
+        final response = await Amplify.API.mutate(request: request).response;
+
+        safePrint('🔄 Availability updated to $status: ${response.data?.isAvailableNow}');
+
+        // Refresh the local volunteer object to keep versions in sync
+        if (response.data != null) {
+          _volunteer = response.data;
+        }
+      }
+    } catch (e) {
+      safePrint('❌ Error updating availability status: $e');
+    }
   }
 }

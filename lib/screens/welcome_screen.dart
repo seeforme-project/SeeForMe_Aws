@@ -5,8 +5,12 @@ import 'package:seeforyou_aws/screens/auth/privacy_terms_screen.dart';
 import 'package:seeforyou_aws/screens/blind_home_screen.dart';
 import 'package:seeforyou_aws/services/agora_service.dart';
 import 'package:seeforyou_aws/screens/video_call_screen.dart';
+// 👇 IMPORT THE NEW LIVE SCREEN
+import 'package:seeforyou_aws/logic/blind_live_screen.dart';
 import 'dart:convert';
 import 'package:amplify_api/amplify_api.dart';
+
+import '../logic/blind_live_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -64,11 +68,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         if (createResponse.hasErrors) {
           safePrint('Error creating call record: ${createResponse.errors}');
-          // Continue anyway - we can still make the call
         }
       } catch (e) {
         safePrint('Could not create call record (user might not be authenticated): $e');
-        // Continue anyway - guest users can still make calls
       }
 
       if (!mounted) return;
@@ -108,92 +110,70 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFBF9F4),
       body: SafeArea(
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
+              const SizedBox(height: 10),
               // App logo
               Image.asset(
                 'assets/app_logo.png',
-                height: 100,
+                height: 80,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Text(
                 'See for Me',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
-                  fontSize: 42,
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[850],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
-                'Your window to the world.',
+                'How can we help you today?',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
-                  fontSize: 18,
+                  fontSize: 16,
                   color: Colors.grey[600],
                 ),
               ),
-              const Spacer(flex: 3),
 
-              // MAIN BUTTON - Start visual assistance call
-              SizedBox(
-                width: double.infinity,
-                height: 70, // Larger button for accessibility
-                child: ElevatedButton.icon(
-                  onPressed: _isConnecting ? null : _startVisualAssistanceCall,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF093B75),
-                    disabledBackgroundColor: Colors.grey[400],
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  icon: _isConnecting
-                      ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: Colors.white,
-                    ),
-                  )
-                      : const Icon(Icons.videocam, size: 32),
-                  label: Text(
-                    _isConnecting
-                        ? 'Connecting to volunteer...'
-                        : 'I need visual assistance',
-                    style: GoogleFonts.lato(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+              const Spacer(flex: 1),
+
+              // --- BUTTON 1: VIDEO CALL ---
+              _buildLargeButton(
+                icon: Icons.videocam,
+                title: "Call Volunteer",
+                subtitle: "Video call a human helper",
+                color: const Color(0xFF093B75), // Deep Blue
+                isLoading: _isConnecting,
+                onTap: _isConnecting ? null : _startVisualAssistanceCall,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Helper text for blind users
-              if (!_isConnecting)
-                Text(
-                  'Tap the button above to instantly connect\nwith a volunteer who can help you see',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.lato(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.5,
-                  ),
-                ),
+              // --- BUTTON 2: AI ASSISTANT ---
+              _buildLargeButton(
+                icon: Icons.auto_awesome,
+                title: "Ask AI",
+                subtitle: "Chat with AI Assistant",
+                color: const Color(0xFF6A0DAD), // Purple for AI
+                isLoading: false,
+                onTap: () {
+                  // Navigate to the new BlindLiveScreen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BlindLiveScreen()),
+                  );
+                },
+              ),
 
-              const SizedBox(height: 32),
+              const Spacer(flex: 2),
 
               // Secondary button - Volunteer
               SizedBox(
@@ -223,10 +203,58 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // Helper widget to make consistent, large accessibility buttons
+  Widget _buildLargeButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback? onTap,
+    required bool isLoading,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 140, // Large height for easy tapping
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          disabledBackgroundColor: Colors.grey[400],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 5,
+        ),
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: Colors.white),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: GoogleFonts.lato(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.lato(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ],
         ),
       ),
     );
