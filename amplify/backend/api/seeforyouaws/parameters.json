@@ -1,0 +1,12 @@
+{
+  "AppSyncApiName": "seeforyouaws",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authseeforyouawsa7dff1d3",
+      "Outputs.UserPoolId"
+    ]
+  },
+  "AuthModeLastUpdated": "2025-11-23T15:58:56.612Z"
+}

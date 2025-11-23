@@ -1,0 +1,12 @@
+[
+  {
+    "Action": [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:UpdateItem"
+    ],
+    "Resource": [
+      "arn:aws:dynamodb:ap-south-1:674693860504:table/Volunteer-qvcmz4ucrbbw3jpmtduar6uyym-dev"
+    ]
+  }
+]

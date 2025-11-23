@@ -1,0 +1,51 @@
+# This custom type is perfect, no changes needed.
+type AvailabilitySlot {
+  day: String!
+  startTime: AWSTime!
+  endTime: AWSTime!
+}
+
+# This is the updated Volunteer model definition.
+type Volunteer @model @auth(rules: [
+  # This is the modern, cleaner way to write the owner rule.
+  # It explicitly says the owner is identified by the "owner" field,
+  # and that owner can create, read, and update their own records.
+  { allow: owner, operations: [create, read, update] }
+]) {
+  id: ID!
+  # We add the "owner" field and link it to the id field.
+  # @auth directives will automatically populate this.
+  owner: ID @index(name: "byOwner", sortKeyFields: ["id"])
+
+  name: String!
+  email: String!
+  gender: String!
+
+  isAvailableNow: Boolean
+  availabilitySchedule: [AvailabilitySlot]
+}
+
+# Add to your schema.graphql
+
+type Call @model @auth(rules: [
+  { allow: public, provider: apiKey, operations: [create, read] }  # Allow anyone to create calls
+  { allow: private, operations: [read, update, delete] }  # Authenticated users can manage
+]) {
+  id: ID!
+  blindUserId: ID!
+  blindUserName: String!
+  volunteerId: ID
+  volunteerName: String
+  status: CallStatus!
+  meetingId: String!
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+enum CallStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}

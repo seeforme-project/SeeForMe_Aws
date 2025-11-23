@@ -1,0 +1,56 @@
+name: seeforyou_aws
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # AWS Amplify Packages (2.x as you had)
+  amplify_flutter: ^2.7.0
+  amplify_auth_cognito: ^2.7.0
+  amplify_secure_storage: ^0.5.13
+  amplify_api: ^2.7.0
+ # videocalling
+  agora_rtc_engine: ^6.3.2
+
+  # Your Existing Dependencies
+  http: ^1.5.0
+
+  flutter_dotenv: ^5.1.0
+  permission_handler: ^11.3.1
+  cloud_firestore: ^5.2.0
+  timeago: ^3.7.1
+
+  # AI & State Management Dependencies
+  flutter_bloc: ^9.1.1
+  web_socket_channel: ^3.0.3
+  camera: ^0.11.1
+  image: ^4.5.4
+  google_fonts: ^6.2.1
+  google_mlkit_object_detection: ^0.15.0
+  google_mlkit_image_labeling: ^0.14.1
+  google_mlkit_text_recognition: ^0.15.0
+  flutter_tts: ^4.2.3
+  cupertino_icons: ^1.0.8
+
+  # The package you added
+  flutter_voice_engine: ^0.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/google_logo.png
+    - assets/app_logo.png
+    - .env
