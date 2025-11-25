@@ -97,7 +97,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       safePrint('Creating call channel: $channelName for guest: $guestName');
 
-      // Create call record in database (so volunteers can see it)
+      // Create call record in database (so volunteers ca n see it)
       const createCallMutation = r'''
         mutation CreateCall($input: CreateCallInput!) {
           createCall(input: $input) {

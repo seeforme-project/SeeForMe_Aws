@@ -9,7 +9,6 @@ class BlindLiveScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We wrap the view in the BlocProvider to initialize the Cubit
     return BlocProvider(
       create: (context) => SessionCubit()..startSession(),
       child: const _SessionPageView(),
@@ -44,19 +43,33 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
     await cubit.startOnlineMode();
   }
 
-  // Handle swipe down gesture - Stop/Disconnect
+  // Handle swipe down gesture - Stop/Disconnect/Offline
   Future<void> _handleSwipeDown() async {
     final cubit = context.read<SessionCubit>();
-    await cubit.cancelCurrentMode();
+
+    // If currently Online, stop it.
+    if (cubit.state.mode == SessionMode.online) {
+      await cubit.cancelCurrentMode();
+      return;
+    }
+
+    // If Idle, start Offline Mode
+    if (cubit.state.mode == SessionMode.idle) {
+      await cubit.startOfflineMode();
+    }
   }
 
-  // Handle double tap gesture - Cancel/Exit
+  // 👇 THIS WAS THE MISSING FUNCTION
   Future<void> _handleDoubleTap() async {
     final cubit = context.read<SessionCubit>();
+
+    // If the AI is active (Online or Offline), stop it first
     if (cubit.state.mode != SessionMode.idle) {
       await cubit.cancelCurrentMode();
     } else {
-      Navigator.of(context).pop();
+      // If idle, exit the screen completely
+      await cubit.stopSession();
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
@@ -67,12 +80,14 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
 
     if (_tapCount == 3) {
       _tapCount = 0;
+      // Triple tap action: Warn user this isn't the home screen
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Use the Home Screen to call a volunteer")),
       );
     } else {
       _tapTimer = Timer(const Duration(milliseconds: 300), () {
         if (_tapCount == 2) {
+          // Double tap action: Exit or Stop
           _handleDoubleTap();
         }
         _tapCount = 0;
@@ -80,12 +95,34 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
     }
   }
 
-  // 👇 THIS WAS THE MISSING FUNCTION
   String _getStatusText(SessionState state) {
     if (state.connecting) return "Connecting...";
-    if (state.mode == SessionMode.online) return "AI Active";
-    if (state.isError) return "Error";
-    return "Swipe UP to Connect";
+
+    // ONLINE MODE
+    if (state.mode == SessionMode.online) {
+      return state.isBotSpeaking ? "AI Speaking..." : "I am Listening...";
+    }
+
+    // OFFLINE MODE
+    if (state.mode == SessionMode.offline) {
+      return "Analyzing...";
+    }
+
+    if (state.isError) return "Error occurred";
+
+    // IDLE MODE
+    return "Swipe UP: Online\nSwipe DOWN: Offline";
+  }
+
+  String _getInstructionText(SessionMode mode) {
+    switch (mode) {
+      case SessionMode.idle:
+        return "Double Tap to Exit";
+      case SessionMode.online:
+        return "Swipe DOWN to Stop";
+      case SessionMode.offline:
+        return "Please wait...";
+    }
   }
 
   @override
@@ -105,19 +142,20 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
           final cameraController = cubit.cameraController;
 
           return GestureDetector(
+            // SWIPE GESTURES
             onVerticalDragEnd: (details) {
               if (details.primaryVelocity! < 0) {
                 // Swipe Up
                 if (state.mode == SessionMode.idle) cubit.startOnlineMode();
               } else if (details.primaryVelocity! > 0) {
                 // Swipe Down
-                cubit.cancelCurrentMode();
+                _handleSwipeDown();
               }
             },
-            onDoubleTap: () {
-              cubit.stopSession();
-              Navigator.of(context).pop();
-            },
+            // TAP GESTURES (Single, Double, Triple)
+            // We use onTap instead of onDoubleTap to handle the triple tap logic manually
+            onTap: _handleTap,
+
             child: Stack(
               children: [
                 // --- LAYER 1: CAMERA PREVIEW ---
@@ -193,9 +231,7 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
                   left: 0,
                   right: 0,
                   child: Text(
-                    state.mode == SessionMode.idle
-                        ? "Swipe UP to Connect"
-                        : "Swipe DOWN to Stop",
+                    _getInstructionText(state.mode), // New Helper
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
