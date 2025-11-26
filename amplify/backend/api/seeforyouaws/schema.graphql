@@ -1,16 +1,16 @@
-# This custom type is perfect, no changes needed.
 type AvailabilitySlot {
   day: String!
   startTime: AWSTime!
   endTime: AWSTime!
 }
 
-# This is the updated Volunteer model definition.
+
 type Volunteer @model @auth(rules: [
   # This is the modern, cleaner way to write the owner rule.
   # It explicitly says the owner is identified by the "owner" field,
   # and that owner can create, read, and update their own records.
   { allow: owner, operations: [create, read, update] }
+  { allow: public, operations: [read] }
 ]) {
   id: ID!
   # We add the "owner" field and link it to the id field.
@@ -25,10 +25,9 @@ type Volunteer @model @auth(rules: [
   availabilitySchedule: [AvailabilitySlot]
 }
 
-# Add to your schema.graphql
 
 type Call @model @auth(rules: [
-  { allow: public, provider: apiKey, operations: [create, read] }  # Allow anyone to create calls
+  { allow: public, provider: apiKey, operations: [create, read, update] }  # Allow anyone to create calls
   { allow: private, operations: [read, update, delete] }  # Authenticated users can manage
 ]) {
   id: ID!
@@ -48,4 +47,44 @@ enum CallStatus {
   REJECTED
   COMPLETED
   CANCELLED
+}
+
+type Report @model @auth(rules: [
+  # Volunteers/Blind users can create reports
+  { allow: public, provider: apiKey, operations: [create] },
+  { allow: private, operations: [create] },
+  # Admins can read and update them
+  { allow: groups, groups: ["Admins"], operations: [create, read, update, delete] }
+]) {
+  id: ID!
+  callId: ID! # Links report to the specific video call
+  reportedBy: String! # "BLIND" or "VOLUNTEER"
+  category: ReportCategory!
+  description: String # Optional description
+  status: ReportStatus!
+  createdAt: AWSDateTime
+}
+
+enum ReportCategory {
+  GOOD_EXPERIENCE      # For positive feedback
+  CONNECTION_ISSUES    # Technical problems
+  INAPPROPRIATE_BEHAVIOR # Critical (Nudity/Harassment)
+  SAFETY_CONCERN       # Critical (Bad advice)
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+}
+
+type BlindUser @model @auth(rules: [
+  # Allow public (Guest) to create/read/update their own record via API Key
+  { allow: public, provider: apiKey, operations: [create, read, update] }
+  # Allow admins to manage
+  { allow: groups, groups: ["Admins"], operations: [read, delete] }
+]) {
+  id: ID! @primaryKey # This will be the Device UUID
+  trustedVolunteerIds: [String] # A list of IDs of volunteers they trust
+  
 }

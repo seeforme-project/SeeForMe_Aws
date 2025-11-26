@@ -76,6 +76,7 @@ class _BlindHomeScreenState extends State<BlindHomeScreen> {
             channelName: channelName,
             userName: user.username,
             isBlindUser: true,
+            callId: _currentCallId!,
           ),
         ),
       )
@@ -119,7 +120,7 @@ class _BlindHomeScreenState extends State<BlindHomeScreen> {
         variables: {
           'input': {
             'id': _currentCallId,
-            'status': 'COMPLETED',
+            'status': 'CANCELLED',
           }
         },
       );

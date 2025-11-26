@@ -1,14 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:amplify_api/amplify_api.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:seeforyou_aws/screens/auth/privacy_terms_screen.dart';
-import 'package:seeforyou_aws/services/agora_service.dart';
 import 'package:seeforyou_aws/screens/video_call_screen.dart';
 import 'package:seeforyou_aws/logic/blind_live_screen.dart';
-import 'dart:convert';
-import 'package:amplify_api/amplify_api.dart';
+import 'package:seeforyou_aws/services/agora_service.dart';
+import 'package:seeforyou_aws/services/blind_user_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -17,253 +18,234 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends State<WelcomeScreen> with WidgetsBindingObserver {
   bool _isConnecting = false;
+  String? _activeCallId;
   final FlutterTts _flutterTts = FlutterTts();
-
-  // Variables for Gesture Detection
   int _tapCount = 0;
   Timer? _tapTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initTTS();
+    BlindUserService.getDeviceId();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _flutterTts.stop();
     _tapTimer?.cancel();
+    if (_activeCallId != null) {
+      _cancelCall(_activeCallId!);
+    }
     super.dispose();
   }
 
-  // 1. Initialize Voice Guidance
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      if (_activeCallId != null) {
+        _cancelCall(_activeCallId!);
+      }
+    }
+  }
+
   Future<void> _initTTS() async {
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(1.0);
-    await _flutterTts.setSpeechRate(0.5);
-
-    // Speak the welcome message
     await _flutterTts.speak(
-        "Welcome to See for Me app. "
-            "If you need visual assistance help, tap twice on the screen anywhere to start a video call with a volunteer, "
-            "and tap three times to get AI assistance."
+        "Welcome to See for Me. "
+            "Tap red button for Emergency. "
+            "Double tap for volunteer. "
+            "Triple tap for AI."
     );
   }
 
-  // 2. Handle Screen Taps
   void _handleScreenTaps() {
-    setState(() {
-      _tapCount++;
-    });
+    setState(() => _tapCount++);
+    if (_tapTimer != null) _tapTimer!.cancel();
 
-    if (_tapTimer != null) {
-      _tapTimer!.cancel();
-    }
-
-    _tapTimer = Timer(const Duration(milliseconds: 600), () {
+    _tapTimer = Timer(const Duration(milliseconds: 600), () async {
       if (_tapCount == 2) {
-        _flutterTts.speak("Starting video call with volunteer");
+        await _flutterTts.stop();
+        await _flutterTts.speak("Starting video call.");
         _startVisualAssistanceCall();
       } else if (_tapCount == 3) {
-        _flutterTts.speak("Opening AI Assistant");
+        await _flutterTts.stop();
+        await _flutterTts.speak("Opening AI.");
         _openAI();
       }
-      _tapCount = 0; // Reset counter
+      _tapCount = 0;
     });
   }
 
   void _openAI() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const BlindLiveScreen()),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const BlindLiveScreen()));
   }
 
-  // Start video call for blind users (guest mode - no auth required)
-  Future<void> _startVisualAssistanceCall() async {
-    // Stop any ongoing speech so it doesn't overlap
-    _flutterTts.stop();
+  Future<void> _triggerEmergency() async {
+    await _flutterTts.stop();
+    setState(() => _isConnecting = true);
 
-    setState(() {
-      _isConnecting = true;
-    });
+    //await _flutterTts.speak("Emergency activated. Finding trusted volunteer.");
+
+    final trustedVolId = await BlindUserService.findAvailableTrustedVolunteer();
+
+    if (trustedVolId != null) {
+      await _flutterTts.speak("Emergency activated, Calling trusted volunteer.");
+      _startVisualAssistanceCall(targetVolunteerId: trustedVolId);
+    } else {
+      await _flutterTts.speak("No trusted volunteers. Connecting to AI.");
+      if (mounted) {
+        setState(() => _isConnecting = false);
+        _openAI();
+      }
+    }
+  }
+
+  Future<bool> _areVolunteersAvailable() async {
+    try {
+      const String query = r'''
+        query ListAvailableVolunteers {
+          listVolunteers(filter: {isAvailableNow: {eq: true}}, limit: 1) {
+            items { id }
+          }
+        }
+      ''';
+      final request = GraphQLRequest<String>(document: query, authorizationMode: APIAuthorizationType.apiKey);
+      final response = await Amplify.API.query(request: request).response;
+      if (response.data != null) {
+        final data = jsonDecode(response.data!);
+        return (data['listVolunteers']['items'] as List).isNotEmpty;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _startVisualAssistanceCall({String? targetVolunteerId}) async {
+    if (targetVolunteerId == null) {
+      safePrint("Checking volunteers...");
+      bool available = await _areVolunteersAvailable();
+      if (!available) {
+        await _flutterTts.speak("No volunteers available. Use AI assistance.");
+        setState(() => _isConnecting = false);
+        return;
+      }
+    }
+
+    setState(() => _isConnecting = true);
+
+    final channelName = AgoraService.generateChannelName();
+    final guestName = 'Blind User ${DateTime.now().millisecondsSinceEpoch % 10000}';
+    final blindUserId = await BlindUserService.getDeviceId();
 
     try {
-      // Generate unique channel name
-      final channelName = AgoraService.generateChannelName();
-      final guestName = 'Blind User ${DateTime.now().millisecondsSinceEpoch % 10000}';
-
-      safePrint('Creating call channel: $channelName for guest: $guestName');
-
-      // Create call record in database (so volunteers ca n see it)
       const createCallMutation = r'''
         mutation CreateCall($input: CreateCallInput!) {
           createCall(input: $input) {
             id
-            blindUserId
-            blindUserName
-            status
-            meetingId
-            createdAt
           }
         }
       ''';
 
-      try {
-        final createRequest = GraphQLRequest<String>(
-          document: createCallMutation,
-          variables: {
-            'input': {
-              'blindUserId': 'guest_${DateTime.now().millisecondsSinceEpoch}',
-              'blindUserName': guestName,
-              'status': 'PENDING',
-              'meetingId': channelName,
-            }
-          },
-          authorizationMode: APIAuthorizationType.apiKey,
-        );
+      final createRequest = GraphQLRequest<String>(
+        document: createCallMutation,
+        variables: {
+          'input': {
+            'blindUserId': blindUserId,
+            'blindUserName': guestName,
+            'status': 'PENDING',
+            'meetingId': channelName,
+          }
+        },
+        authorizationMode: APIAuthorizationType.apiKey,
+      );
 
-        final createResponse = await Amplify.API.mutate(request: createRequest).response;
-        safePrint('Create call response: ${createResponse.data}');
+      final createResponse = await Amplify.API.mutate(request: createRequest).response;
 
-        if (createResponse.hasErrors) {
-          safePrint('Error creating call record: ${createResponse.errors}');
-        }
-      } catch (e) {
-        safePrint('Could not create call record (user might not be authenticated): $e');
+      if (createResponse.hasErrors) {
+        setState(() => _isConnecting = false);
+        return;
       }
+
+      final callData = jsonDecode(createResponse.data!)['createCall'];
+      _activeCallId = callData['id'];
 
       if (!mounted) return;
 
-      // Navigate directly to video call
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VideoCallScreen(
-            channelName: channelName,
-            userName: guestName,
-            isBlindUser: true,
-          ),
-        ),
-      ).then((_) {
-        // Call ended - back to welcome screen
-        setState(() {
-          _isConnecting = false;
-        });
-        // Optionally speak again when they return
-        _flutterTts.speak("Call ended. Tap twice for volunteer, three times for AI.");
-      });
-    } catch (e) {
-      safePrint('Error starting visual assistance: $e');
-      _flutterTts.speak("An error occurred starting the call.");
-      if (mounted) {
-        setState(() {
-          _isConnecting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.redAccent,
-            content: Text('Failed to start call: $e'),
-            duration: const Duration(seconds: 3),
+      await _flutterTts.stop();
+
+      try {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VideoCallScreen(
+              channelName: channelName,
+              userName: guestName,
+              isBlindUser: true,
+              callId: _activeCallId!,
+            ),
           ),
         );
+      } catch (e) {
+        safePrint("Nav error: $e");
+      } finally {
+        if (_activeCallId != null) await _cancelCall(_activeCallId!);
+        if (mounted) setState(() { _isConnecting = false; _activeCallId = null; });
       }
+    } catch (e) {
+      setState(() => _isConnecting = false);
     }
+  }
+
+  Future<void> _cancelCall(String callId) async {
+    try {
+      const mutation = r'''mutation CancelCall($id: ID!) { updateCall(input: {id: $id, status: CANCELLED}) { id status } }''';
+      await Amplify.API.mutate(request: GraphQLRequest<String>(document: mutation, variables: {'id': callId}, authorizationMode: APIAuthorizationType.apiKey)).response;
+    } catch (e) { safePrint(e); }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F4),
-      // 3. WRAP BODY IN GESTURE DETECTOR
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: _handleScreenTaps,
         child: SafeArea(
           child: Container(
-            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               children: [
                 const SizedBox(height: 10),
-                // App logo
-                Image.asset(
-                  'assets/app_logo.png',
-                  height: 80,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'See for Me',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.lato(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[850],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Double tap anywhere for Volunteer\nTriple tap for AI',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.lato(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-
+                Image.asset('assets/app_logo.png', height: 70),
+                const SizedBox(height: 10),
+                Text('See for Me', style: GoogleFonts.lato(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.grey[850])),
+                Text('Double tap: Volunteer | Triple tap: AI', textAlign: TextAlign.center, style: GoogleFonts.lato(fontSize: 14, color: Colors.grey[600])),
                 const Spacer(flex: 1),
-
-                // --- BUTTON 1: VIDEO CALL ---
-                _buildLargeButton(
-                  icon: Icons.videocam,
-                  title: "Call Volunteer",
-                  subtitle: "Tap here or Double Tap screen",
-                  color: const Color(0xFF093B75),
-                  isLoading: _isConnecting,
-                  onTap: _isConnecting ? null : _startVisualAssistanceCall,
+                SizedBox(
+                  width: double.infinity, height: 70,
+                  child: ElevatedButton.icon(
+                    onPressed: _isConnecting ? null : _triggerEmergency,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 32),
+                    label: Text("EMERGENCY CALL", style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // --- BUTTON 2: AI ASSISTANT ---
-                _buildLargeButton(
-                  icon: Icons.auto_awesome,
-                  title: "Ask AI",
-                  subtitle: "Tap here or Triple Tap screen",
-                  color: const Color(0xFF6A0DAD), // Purple for AI
-                  isLoading: false,
-                  onTap: _openAI,
-                ),
-
+                _buildLargeButton(icon: Icons.videocam, title: "Call Volunteer", subtitle: "Tap here or Double Tap screen", color: const Color(0xFF093B75), isLoading: _isConnecting, onPressed: _isConnecting ? null : () => _startVisualAssistanceCall()),
+                const SizedBox(height: 20),
+                _buildLargeButton(icon: Icons.auto_awesome, title: "Ask AI", subtitle: "Tap here or Triple Tap screen", color: const Color(0xFF6A0DAD), isLoading: false, onPressed: _openAI),
                 const Spacer(flex: 2),
-
-                // Secondary button - Volunteer
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacyTermsScreen(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF093B75), width: 2),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      "I'd like to volunteer",
-                      style: GoogleFonts.lato(
-                        fontSize: 16,
-                        color: const Color(0xFF093B75),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrivacyTermsScreen())),
+                    style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF093B75), width: 2), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: Text("I'd like to volunteer", style: GoogleFonts.lato(fontSize: 16, color: const Color(0xFF093B75), fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -274,51 +256,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  Widget _buildLargeButton({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback? onTap,
-    required bool isLoading,
-  }) {
+  Widget _buildLargeButton({required IconData icon, required String title, required String subtitle, required Color color, required VoidCallback? onPressed, required bool isLoading}) {
     return SizedBox(
-      width: double.infinity,
-      height: 140,
+      width: double.infinity, height: 120,
       child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          disabledBackgroundColor: Colors.grey[400],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 5,
-        ),
-        child: isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: Colors.white),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: GoogleFonts.lato(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: GoogleFonts.lato(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(backgroundColor: color, disabledBackgroundColor: Colors.grey[400], shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+        child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 36, color: Colors.white), const SizedBox(height: 8), Text(title, style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)), Text(subtitle, style: GoogleFonts.lato(fontSize: 13, color: Colors.white70))]),
       ),
     );
   }

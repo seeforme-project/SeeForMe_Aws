@@ -23,7 +23,8 @@ class _SessionPageView extends StatefulWidget {
   State<_SessionPageView> createState() => _SessionPageViewState();
 }
 
-class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingObserver {
+class _SessionPageViewState extends State<_SessionPageView>
+    with WidgetsBindingObserver {
   bool _showDebug = false;
 
   // Gesture detection variables
@@ -82,7 +83,9 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
       _tapCount = 0;
       // Triple tap action: Warn user this isn't the home screen
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Use the Home Screen to call a volunteer")),
+        const SnackBar(
+          content: Text("Use the Home Screen to call a volunteer"),
+        ),
       );
     } else {
       _tapTimer = Timer(const Duration(milliseconds: 300), () {
@@ -133,7 +136,10 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
         listener: (context, state) {
           if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(state.error!),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         },
@@ -159,7 +165,9 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
             child: Stack(
               children: [
                 // --- LAYER 1: CAMERA PREVIEW ---
-                if (state.isCameraActive && cameraController != null && cameraController.value.isInitialized)
+                if (state.isCameraActive &&
+                    cameraController != null &&
+                    cameraController.value.isInitialized)
                   SizedBox.expand(
                     child: FittedBox(
                       fit: BoxFit.cover,
@@ -184,9 +192,9 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
                       Text(
                         _getStatusText(state),
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -200,14 +208,24 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
                         decoration: BoxDecoration(
                           color: state.isBotSpeaking
                               ? Colors.greenAccent.withOpacity(0.8)
-                              : (state.mode == SessionMode.online ? Colors.blue.withOpacity(0.5) : Colors.white10),
+                              : (state.mode == SessionMode.online
+                              ? Colors.blue.withOpacity(0.5)
+                              : Colors.white10),
                           shape: BoxShape.circle,
-                          boxShadow: state.isBotSpeaking ? [
-                            BoxShadow(color: Colors.greenAccent.withOpacity(0.5), blurRadius: 20, spreadRadius: 5)
-                          ] : [],
+                          boxShadow: state.isBotSpeaking
+                              ? [
+                            BoxShadow(
+                              color: Colors.greenAccent.withOpacity(0.5),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ]
+                              : [],
                         ),
                         child: Icon(
-                          state.mode == SessionMode.online ? Icons.graphic_eq : Icons.mic_off,
+                          state.mode == SessionMode.online
+                              ? Icons.graphic_eq
+                              : Icons.mic_off,
                           size: 60,
                           color: Colors.white,
                         ),
@@ -215,12 +233,12 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
 
                       const SizedBox(height: 60),
 
-                      if(state.mode == SessionMode.online)
+                      if (state.mode == SessionMode.online)
                         const Text(
                           "I can see you.\nSay 'Hello' or ask what I see.",
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white70, fontSize: 18),
-                        )
+                        ),
                     ],
                   ),
                 ),
@@ -234,9 +252,9 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
                     _getInstructionText(state.mode), // New Helper
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -244,7 +262,11 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
                 if (state.connecting)
                   Container(
                     color: Colors.black54,
-                    child: const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.cyanAccent,
+                      ),
+                    ),
                   ),
 
                 // Debug Overlay
@@ -266,7 +288,11 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
 
   // --- DEBUG HELPERS ---
 
-  Widget _buildDebugOverlay(SessionState state, CameraController? controller, SessionCubit cubit) {
+  Widget _buildDebugOverlay(
+      SessionState state,
+      CameraController? controller,
+      SessionCubit cubit,
+      ) {
     return Positioned.fill(
       child: Container(
         color: Colors.black.withOpacity(0.92),
@@ -276,21 +302,49 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Debug Panel', style: TextStyle(color: Colors.white, fontSize: 18)),
+                const Text(
+                  'Debug Panel',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   children: [
-                    _debugButton(icon: Icons.cameraswitch, label: 'Switch Cam', onTap: () => cubit.switchCamera()),
-                    _debugButton(icon: Icons.cloud, label: 'Online', onTap: () => _handleSwipeUp()),
-                    _debugButton(icon: Icons.stop, label: 'Stop', onTap: () => _handleSwipeDown()),
+                    _debugButton(
+                      icon: Icons.cameraswitch,
+                      label: 'Switch Cam',
+                      onTap: () => cubit.switchCamera(),
+                    ),
+                    _debugButton(
+                      icon: Icons.cloud,
+                      label: 'Online',
+                      onTap: () => _handleSwipeUp(),
+                    ),
+                    _debugButton(
+                      icon: Icons.stop,
+                      label: 'Stop',
+                      onTap: () => _handleSwipeDown(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text('Mode: ${state.mode.name}', style: const TextStyle(color: Colors.green)),
-                Text('Recording: ${state.isRecording}', style: const TextStyle(color: Colors.white70)),
-                Text('Bot Speaking: ${state.isBotSpeaking}', style: const TextStyle(color: Colors.white70)),
-                if (state.error != null) Text('Error: ${state.error}', style: const TextStyle(color: Colors.red)),
+                Text(
+                  'Mode: ${state.mode.name}',
+                  style: const TextStyle(color: Colors.green),
+                ),
+                Text(
+                  'Recording: ${state.isRecording}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                Text(
+                  'Bot Speaking: ${state.isBotSpeaking}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                if (state.error != null)
+                  Text(
+                    'Error: ${state.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
               ],
             ),
           ),
@@ -299,12 +353,19 @@ class _SessionPageViewState extends State<_SessionPageView> with WidgetsBindingO
     );
   }
 
-  Widget _debugButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _debugButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return ElevatedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 16),
       label: Text(label),
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.white24, foregroundColor: Colors.white),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white24,
+        foregroundColor: Colors.white,
+      ),
     );
   }
 }

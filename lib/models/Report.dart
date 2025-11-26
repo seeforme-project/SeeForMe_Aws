@@ -23,16 +23,15 @@ import 'ModelProvider.dart';
 import 'package:amplify_core/amplify_core.dart' as amplify_core;
 
 
-/** This is an auto generated class representing the Call type in your schema. */
-class Call extends amplify_core.Model {
-  static const classType = const _CallModelType();
+/** This is an auto generated class representing the Report type in your schema. */
+class Report extends amplify_core.Model {
+  static const classType = const _ReportModelType();
   final String id;
-  final String? _blindUserId;
-  final String? _blindUserName;
-  final String? _volunteerId;
-  final String? _volunteerName;
-  final CallStatus? _status;
-  final String? _meetingId;
+  final String? _callId;
+  final String? _reportedBy;
+  final ReportCategory? _category;
+  final String? _description;
+  final ReportStatus? _status;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -43,15 +42,15 @@ class Call extends amplify_core.Model {
   @override
   String getId() => id;
   
-  CallModelIdentifier get modelIdentifier {
-      return CallModelIdentifier(
+  ReportModelIdentifier get modelIdentifier {
+      return ReportModelIdentifier(
         id: id
       );
   }
   
-  String get blindUserId {
+  String get callId {
     try {
-      return _blindUserId!;
+      return _callId!;
     } catch(e) {
       throw amplify_core.AmplifyCodeGenModelException(
           amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
@@ -62,9 +61,9 @@ class Call extends amplify_core.Model {
     }
   }
   
-  String get blindUserName {
+  String get reportedBy {
     try {
-      return _blindUserName!;
+      return _reportedBy!;
     } catch(e) {
       throw amplify_core.AmplifyCodeGenModelException(
           amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
@@ -75,30 +74,26 @@ class Call extends amplify_core.Model {
     }
   }
   
-  String? get volunteerId {
-    return _volunteerId;
+  ReportCategory get category {
+    try {
+      return _category!;
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
   }
   
-  String? get volunteerName {
-    return _volunteerName;
+  String? get description {
+    return _description;
   }
   
-  CallStatus get status {
+  ReportStatus get status {
     try {
       return _status!;
-    } catch(e) {
-      throw amplify_core.AmplifyCodeGenModelException(
-          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
-          recoverySuggestion:
-            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
-          underlyingException: e.toString()
-          );
-    }
-  }
-  
-  String get meetingId {
-    try {
-      return _meetingId!;
     } catch(e) {
       throw amplify_core.AmplifyCodeGenModelException(
           amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
@@ -117,19 +112,17 @@ class Call extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const Call._internal({required this.id, required blindUserId, required blindUserName, volunteerId, volunteerName, required status, required meetingId, createdAt, updatedAt}): _blindUserId = blindUserId, _blindUserName = blindUserName, _volunteerId = volunteerId, _volunteerName = volunteerName, _status = status, _meetingId = meetingId, _createdAt = createdAt, _updatedAt = updatedAt;
+  const Report._internal({required this.id, required callId, required reportedBy, required category, description, required status, createdAt, updatedAt}): _callId = callId, _reportedBy = reportedBy, _category = category, _description = description, _status = status, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory Call({String? id, required String blindUserId, required String blindUserName, String? volunteerId, String? volunteerName, required CallStatus status, required String meetingId, amplify_core.TemporalDateTime? createdAt, amplify_core.TemporalDateTime? updatedAt}) {
-    return Call._internal(
+  factory Report({String? id, required String callId, required String reportedBy, required ReportCategory category, String? description, required ReportStatus status, amplify_core.TemporalDateTime? createdAt}) {
+    return Report._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
-      blindUserId: blindUserId,
-      blindUserName: blindUserName,
-      volunteerId: volunteerId,
-      volunteerName: volunteerName,
+      callId: callId,
+      reportedBy: reportedBy,
+      category: category,
+      description: description,
       status: status,
-      meetingId: meetingId,
-      createdAt: createdAt,
-      updatedAt: updatedAt);
+      createdAt: createdAt);
   }
   
   bool equals(Object other) {
@@ -139,16 +132,14 @@ class Call extends amplify_core.Model {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is Call &&
+    return other is Report &&
       id == other.id &&
-      _blindUserId == other._blindUserId &&
-      _blindUserName == other._blindUserName &&
-      _volunteerId == other._volunteerId &&
-      _volunteerName == other._volunteerName &&
+      _callId == other._callId &&
+      _reportedBy == other._reportedBy &&
+      _category == other._category &&
+      _description == other._description &&
       _status == other._status &&
-      _meetingId == other._meetingId &&
-      _createdAt == other._createdAt &&
-      _updatedAt == other._updatedAt;
+      _createdAt == other._createdAt;
   }
   
   @override
@@ -158,14 +149,13 @@ class Call extends amplify_core.Model {
   String toString() {
     var buffer = new StringBuffer();
     
-    buffer.write("Call {");
+    buffer.write("Report {");
     buffer.write("id=" + "$id" + ", ");
-    buffer.write("blindUserId=" + "$_blindUserId" + ", ");
-    buffer.write("blindUserName=" + "$_blindUserName" + ", ");
-    buffer.write("volunteerId=" + "$_volunteerId" + ", ");
-    buffer.write("volunteerName=" + "$_volunteerName" + ", ");
+    buffer.write("callId=" + "$_callId" + ", ");
+    buffer.write("reportedBy=" + "$_reportedBy" + ", ");
+    buffer.write("category=" + (_category != null ? amplify_core.enumToString(_category)! : "null") + ", ");
+    buffer.write("description=" + "$_description" + ", ");
     buffer.write("status=" + (_status != null ? amplify_core.enumToString(_status)! : "null") + ", ");
-    buffer.write("meetingId=" + "$_meetingId" + ", ");
     buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
     buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
@@ -173,95 +163,92 @@ class Call extends amplify_core.Model {
     return buffer.toString();
   }
   
-  Call copyWith({String? blindUserId, String? blindUserName, String? volunteerId, String? volunteerName, CallStatus? status, String? meetingId, amplify_core.TemporalDateTime? createdAt, amplify_core.TemporalDateTime? updatedAt}) {
-    return Call._internal(
+  Report copyWith({String? callId, String? reportedBy, ReportCategory? category, String? description, ReportStatus? status, amplify_core.TemporalDateTime? createdAt}) {
+    return Report._internal(
       id: id,
-      blindUserId: blindUserId ?? this.blindUserId,
-      blindUserName: blindUserName ?? this.blindUserName,
-      volunteerId: volunteerId ?? this.volunteerId,
-      volunteerName: volunteerName ?? this.volunteerName,
+      callId: callId ?? this.callId,
+      reportedBy: reportedBy ?? this.reportedBy,
+      category: category ?? this.category,
+      description: description ?? this.description,
       status: status ?? this.status,
-      meetingId: meetingId ?? this.meetingId,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt);
+      createdAt: createdAt ?? this.createdAt);
   }
   
-  Call copyWithModelFieldValues({
-    ModelFieldValue<String>? blindUserId,
-    ModelFieldValue<String>? blindUserName,
-    ModelFieldValue<String?>? volunteerId,
-    ModelFieldValue<String?>? volunteerName,
-    ModelFieldValue<CallStatus>? status,
-    ModelFieldValue<String>? meetingId,
-    ModelFieldValue<amplify_core.TemporalDateTime?>? createdAt,
-    ModelFieldValue<amplify_core.TemporalDateTime?>? updatedAt
+  Report copyWithModelFieldValues({
+    ModelFieldValue<String>? callId,
+    ModelFieldValue<String>? reportedBy,
+    ModelFieldValue<ReportCategory>? category,
+    ModelFieldValue<String?>? description,
+    ModelFieldValue<ReportStatus>? status,
+    ModelFieldValue<amplify_core.TemporalDateTime?>? createdAt
   }) {
-    return Call._internal(
+    return Report._internal(
       id: id,
-      blindUserId: blindUserId == null ? this.blindUserId : blindUserId.value,
-      blindUserName: blindUserName == null ? this.blindUserName : blindUserName.value,
-      volunteerId: volunteerId == null ? this.volunteerId : volunteerId.value,
-      volunteerName: volunteerName == null ? this.volunteerName : volunteerName.value,
+      callId: callId == null ? this.callId : callId.value,
+      reportedBy: reportedBy == null ? this.reportedBy : reportedBy.value,
+      category: category == null ? this.category : category.value,
+      description: description == null ? this.description : description.value,
       status: status == null ? this.status : status.value,
-      meetingId: meetingId == null ? this.meetingId : meetingId.value,
-      createdAt: createdAt == null ? this.createdAt : createdAt.value,
-      updatedAt: updatedAt == null ? this.updatedAt : updatedAt.value
+      createdAt: createdAt == null ? this.createdAt : createdAt.value
     );
   }
   
-  Call.fromJson(Map<String, dynamic> json)  
+  Report.fromJson(Map<String, dynamic> json)  
     : id = json['id'],
-      _blindUserId = json['blindUserId'],
-      _blindUserName = json['blindUserName'],
-      _volunteerId = json['volunteerId'],
-      _volunteerName = json['volunteerName'],
-      _status = amplify_core.enumFromString<CallStatus>(json['status'], CallStatus.values),
-      _meetingId = json['meetingId'],
+      _callId = json['callId'],
+      _reportedBy = json['reportedBy'],
+      _category = amplify_core.enumFromString<ReportCategory>(json['category'], ReportCategory.values),
+      _description = json['description'],
+      _status = amplify_core.enumFromString<ReportStatus>(json['status'], ReportStatus.values),
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'blindUserId': _blindUserId, 'blindUserName': _blindUserName, 'volunteerId': _volunteerId, 'volunteerName': _volunteerName, 'status': amplify_core.enumToString(_status), 'meetingId': _meetingId, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'callId': _callId, 'reportedBy': _reportedBy, 'category': amplify_core.enumToString(_category), 'description': _description, 'status': amplify_core.enumToString(_status), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
     'id': id,
-    'blindUserId': _blindUserId,
-    'blindUserName': _blindUserName,
-    'volunteerId': _volunteerId,
-    'volunteerName': _volunteerName,
+    'callId': _callId,
+    'reportedBy': _reportedBy,
+    'category': _category,
+    'description': _description,
     'status': _status,
-    'meetingId': _meetingId,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
 
-  static final amplify_core.QueryModelIdentifier<CallModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<CallModelIdentifier>();
+  static final amplify_core.QueryModelIdentifier<ReportModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<ReportModelIdentifier>();
   static final ID = amplify_core.QueryField(fieldName: "id");
-  static final BLINDUSERID = amplify_core.QueryField(fieldName: "blindUserId");
-  static final BLINDUSERNAME = amplify_core.QueryField(fieldName: "blindUserName");
-  static final VOLUNTEERID = amplify_core.QueryField(fieldName: "volunteerId");
-  static final VOLUNTEERNAME = amplify_core.QueryField(fieldName: "volunteerName");
+  static final CALLID = amplify_core.QueryField(fieldName: "callId");
+  static final REPORTEDBY = amplify_core.QueryField(fieldName: "reportedBy");
+  static final CATEGORY = amplify_core.QueryField(fieldName: "category");
+  static final DESCRIPTION = amplify_core.QueryField(fieldName: "description");
   static final STATUS = amplify_core.QueryField(fieldName: "status");
-  static final MEETINGID = amplify_core.QueryField(fieldName: "meetingId");
   static final CREATEDAT = amplify_core.QueryField(fieldName: "createdAt");
-  static final UPDATEDAT = amplify_core.QueryField(fieldName: "updatedAt");
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
-    modelSchemaDefinition.name = "Call";
-    modelSchemaDefinition.pluralName = "Calls";
+    modelSchemaDefinition.name = "Report";
+    modelSchemaDefinition.pluralName = "Reports";
     
     modelSchemaDefinition.authRules = [
       amplify_core.AuthRule(
         authStrategy: amplify_core.AuthStrategy.PUBLIC,
         provider: amplify_core.AuthRuleProvider.APIKEY,
         operations: const [
-          amplify_core.ModelOperation.CREATE,
-          amplify_core.ModelOperation.READ,
-          amplify_core.ModelOperation.UPDATE
+          amplify_core.ModelOperation.CREATE
         ]),
       amplify_core.AuthRule(
         authStrategy: amplify_core.AuthStrategy.PRIVATE,
         operations: const [
+          amplify_core.ModelOperation.CREATE
+        ]),
+      amplify_core.AuthRule(
+        authStrategy: amplify_core.AuthStrategy.GROUPS,
+        groupClaim: "cognito:groups",
+        groups: [ "Admins" ],
+        provider: amplify_core.AuthRuleProvider.USERPOOLS,
+        operations: const [
+          amplify_core.ModelOperation.CREATE,
           amplify_core.ModelOperation.READ,
           amplify_core.ModelOperation.UPDATE,
           amplify_core.ModelOperation.DELETE
@@ -271,78 +258,73 @@ class Call extends amplify_core.Model {
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.BLINDUSERID,
+      key: Report.CALLID,
       isRequired: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.BLINDUSERNAME,
+      key: Report.REPORTEDBY,
       isRequired: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.VOLUNTEERID,
-      isRequired: false,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
-    ));
-    
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.VOLUNTEERNAME,
-      isRequired: false,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
-    ));
-    
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.STATUS,
+      key: Report.CATEGORY,
       isRequired: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.enumeration)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.MEETINGID,
-      isRequired: true,
+      key: Report.DESCRIPTION,
+      isRequired: false,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.CREATEDAT,
+      key: Report.STATUS,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.enumeration)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: Report.CREATEDAT,
       isRequired: false,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.dateTime)
     ));
     
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Call.UPDATEDAT,
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.nonQueryField(
+      fieldName: 'updatedAt',
       isRequired: false,
+      isReadOnly: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.dateTime)
     ));
   });
 }
 
-class _CallModelType extends amplify_core.ModelType<Call> {
-  const _CallModelType();
+class _ReportModelType extends amplify_core.ModelType<Report> {
+  const _ReportModelType();
   
   @override
-  Call fromJson(Map<String, dynamic> jsonData) {
-    return Call.fromJson(jsonData);
+  Report fromJson(Map<String, dynamic> jsonData) {
+    return Report.fromJson(jsonData);
   }
   
   @override
   String modelName() {
-    return 'Call';
+    return 'Report';
   }
 }
 
 /**
  * This is an auto generated class representing the model identifier
- * of [Call] in your schema.
+ * of [Report] in your schema.
  */
-class CallModelIdentifier implements amplify_core.ModelIdentifier<Call> {
+class ReportModelIdentifier implements amplify_core.ModelIdentifier<Report> {
   final String id;
 
-  /** Create an instance of CallModelIdentifier using [id] the primary key. */
-  const CallModelIdentifier({
+  /** Create an instance of ReportModelIdentifier using [id] the primary key. */
+  const ReportModelIdentifier({
     required this.id});
   
   @override
@@ -360,7 +342,7 @@ class CallModelIdentifier implements amplify_core.ModelIdentifier<Call> {
   String serializeAsString() => serializeAsMap().values.join('#');
   
   @override
-  String toString() => 'CallModelIdentifier(id: $id)';
+  String toString() => 'ReportModelIdentifier(id: $id)';
   
   @override
   bool operator ==(Object other) {
@@ -368,7 +350,7 @@ class CallModelIdentifier implements amplify_core.ModelIdentifier<Call> {
       return true;
     }
     
-    return other is CallModelIdentifier &&
+    return other is ReportModelIdentifier &&
       id == other.id;
   }
   
