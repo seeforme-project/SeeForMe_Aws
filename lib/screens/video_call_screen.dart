@@ -54,7 +54,9 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   Future<void> _startWaitingLogic() async {
+    await Future.delayed(const Duration(seconds: 1));
 
+    await _flutterTts.stop();
     await _flutterTts.setLanguage("en-US");
 
 

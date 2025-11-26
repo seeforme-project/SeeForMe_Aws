@@ -49,13 +49,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Future<void> _initBlindFeedback() async {
     await _flutterTts.stop();
     await Future.delayed(const Duration(milliseconds: 500));
-    await _flutterTts.setLanguage("en-US");
 
-    String instructions = "Call ended. Double tap to rate five stars. "
-        "Triple tap if you had a safety issue.";
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setPitch(1.0);
+
+    bool isAlreadyTrusted = false;
 
     if (widget.volunteerId != null) {
-      instructions += " Long press to add this volunteer to your Trusted List.";
+      isAlreadyTrusted = await BlindUserService.isVolunteerAlreadyTrusted(widget.volunteerId!);
+    }
+
+    String instructions = "Call ended. Double tap anywhere to rate five stars. "
+        "Triple tap if you had a safety issue.";
+
+    if (widget.volunteerId != null && !isAlreadyTrusted) {
+      instructions += " Long press to add this volunteer to your Trusted Emergency List.";
     }
 
     await _flutterTts.speak(instructions);
@@ -82,18 +90,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   Future<void> _addToTrusted() async {
     HapticFeedback.mediumImpact();
-    await _flutterTts.stop();
 
     if (widget.volunteerId == null) {
-      await _flutterTts.speak("Cannot identify volunteer.");
+      await _flutterTts.speak("Sorry, I cannot identify the volunteer.");
       return;
     }
 
-    await _flutterTts.speak("Adding volunteer to trusted list.");
-    await BlindUserService.addTrustedVolunteer(widget.volunteerId!);
-    await _flutterTts.speak("Added successfully.");
-  }
+    bool isTrusted = await BlindUserService.isVolunteerAlreadyTrusted(widget.volunteerId!);
 
+    if (isTrusted) {
+      await _flutterTts.speak("This volunteer is already in your trusted list.");
+    } else {
+      await _flutterTts.speak("Adding volunteer to your trusted list...");
+      await BlindUserService.addTrustedVolunteer(widget.volunteerId!);
+      await _flutterTts.speak("Volunteer added to your trusted emergency list.");
+    }
+  }
   Future<void> _submitReport(String category, String description) async {
     setState(() => _isSubmitting = true);
     try {

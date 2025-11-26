@@ -190,4 +190,20 @@ class BlindUserService {
       return false;
     }
   }
+
+  static Future<bool> isVolunteerAlreadyTrusted(String volunteerId) async {
+    try {
+      final userId = await getDeviceId();
+      final userRecord = await _fetchBlindUser(userId);
+
+      if (userRecord != null && userRecord['trustedVolunteerIds'] != null) {
+        List<dynamic> trustedList = userRecord['trustedVolunteerIds'];
+        // Check if the list contains the ID
+        return trustedList.contains(volunteerId);
+      }
+    } catch (e) {
+      safePrint("Error checking trust status: $e");
+    }
+    return false;
+  }
 }
