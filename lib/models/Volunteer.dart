@@ -34,6 +34,8 @@ class Volunteer extends amplify_core.Model {
   final String? _gender;
   final bool? _isAvailableNow;
   final List<AvailabilitySlot>? _availabilitySchedule;
+  final int? _warningCount;
+  final bool? _isBanned;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -101,6 +103,14 @@ class Volunteer extends amplify_core.Model {
     return _availabilitySchedule;
   }
   
+  int? get warningCount {
+    return _warningCount;
+  }
+  
+  bool? get isBanned {
+    return _isBanned;
+  }
+  
   amplify_core.TemporalDateTime? get createdAt {
     return _createdAt;
   }
@@ -109,9 +119,9 @@ class Volunteer extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const Volunteer._internal({required this.id, owner, required name, required email, required gender, isAvailableNow, availabilitySchedule, createdAt, updatedAt}): _owner = owner, _name = name, _email = email, _gender = gender, _isAvailableNow = isAvailableNow, _availabilitySchedule = availabilitySchedule, _createdAt = createdAt, _updatedAt = updatedAt;
+  const Volunteer._internal({required this.id, owner, required name, required email, required gender, isAvailableNow, availabilitySchedule, warningCount, isBanned, createdAt, updatedAt}): _owner = owner, _name = name, _email = email, _gender = gender, _isAvailableNow = isAvailableNow, _availabilitySchedule = availabilitySchedule, _warningCount = warningCount, _isBanned = isBanned, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory Volunteer({String? id, String? owner, required String name, required String email, required String gender, bool? isAvailableNow, List<AvailabilitySlot>? availabilitySchedule}) {
+  factory Volunteer({String? id, String? owner, required String name, required String email, required String gender, bool? isAvailableNow, List<AvailabilitySlot>? availabilitySchedule, int? warningCount, bool? isBanned}) {
     return Volunteer._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
       owner: owner,
@@ -119,7 +129,9 @@ class Volunteer extends amplify_core.Model {
       email: email,
       gender: gender,
       isAvailableNow: isAvailableNow,
-      availabilitySchedule: availabilitySchedule != null ? List<AvailabilitySlot>.unmodifiable(availabilitySchedule) : availabilitySchedule);
+      availabilitySchedule: availabilitySchedule != null ? List<AvailabilitySlot>.unmodifiable(availabilitySchedule) : availabilitySchedule,
+      warningCount: warningCount,
+      isBanned: isBanned);
   }
   
   bool equals(Object other) {
@@ -136,7 +148,9 @@ class Volunteer extends amplify_core.Model {
       _email == other._email &&
       _gender == other._gender &&
       _isAvailableNow == other._isAvailableNow &&
-      DeepCollectionEquality().equals(_availabilitySchedule, other._availabilitySchedule);
+      DeepCollectionEquality().equals(_availabilitySchedule, other._availabilitySchedule) &&
+      _warningCount == other._warningCount &&
+      _isBanned == other._isBanned;
   }
   
   @override
@@ -154,6 +168,8 @@ class Volunteer extends amplify_core.Model {
     buffer.write("gender=" + "$_gender" + ", ");
     buffer.write("isAvailableNow=" + (_isAvailableNow != null ? _isAvailableNow!.toString() : "null") + ", ");
     buffer.write("availabilitySchedule=" + (_availabilitySchedule != null ? _availabilitySchedule!.toString() : "null") + ", ");
+    buffer.write("warningCount=" + (_warningCount != null ? _warningCount!.toString() : "null") + ", ");
+    buffer.write("isBanned=" + (_isBanned != null ? _isBanned!.toString() : "null") + ", ");
     buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
     buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
@@ -161,7 +177,7 @@ class Volunteer extends amplify_core.Model {
     return buffer.toString();
   }
   
-  Volunteer copyWith({String? owner, String? name, String? email, String? gender, bool? isAvailableNow, List<AvailabilitySlot>? availabilitySchedule}) {
+  Volunteer copyWith({String? owner, String? name, String? email, String? gender, bool? isAvailableNow, List<AvailabilitySlot>? availabilitySchedule, int? warningCount, bool? isBanned}) {
     return Volunteer._internal(
       id: id,
       owner: owner ?? this.owner,
@@ -169,7 +185,9 @@ class Volunteer extends amplify_core.Model {
       email: email ?? this.email,
       gender: gender ?? this.gender,
       isAvailableNow: isAvailableNow ?? this.isAvailableNow,
-      availabilitySchedule: availabilitySchedule ?? this.availabilitySchedule);
+      availabilitySchedule: availabilitySchedule ?? this.availabilitySchedule,
+      warningCount: warningCount ?? this.warningCount,
+      isBanned: isBanned ?? this.isBanned);
   }
   
   Volunteer copyWithModelFieldValues({
@@ -178,7 +196,9 @@ class Volunteer extends amplify_core.Model {
     ModelFieldValue<String>? email,
     ModelFieldValue<String>? gender,
     ModelFieldValue<bool?>? isAvailableNow,
-    ModelFieldValue<List<AvailabilitySlot>?>? availabilitySchedule
+    ModelFieldValue<List<AvailabilitySlot>?>? availabilitySchedule,
+    ModelFieldValue<int?>? warningCount,
+    ModelFieldValue<bool?>? isBanned
   }) {
     return Volunteer._internal(
       id: id,
@@ -187,7 +207,9 @@ class Volunteer extends amplify_core.Model {
       email: email == null ? this.email : email.value,
       gender: gender == null ? this.gender : gender.value,
       isAvailableNow: isAvailableNow == null ? this.isAvailableNow : isAvailableNow.value,
-      availabilitySchedule: availabilitySchedule == null ? this.availabilitySchedule : availabilitySchedule.value
+      availabilitySchedule: availabilitySchedule == null ? this.availabilitySchedule : availabilitySchedule.value,
+      warningCount: warningCount == null ? this.warningCount : warningCount.value,
+      isBanned: isBanned == null ? this.isBanned : isBanned.value
     );
   }
   
@@ -204,11 +226,13 @@ class Volunteer extends amplify_core.Model {
           .map((e) => AvailabilitySlot.fromJson(new Map<String, dynamic>.from(e['serializedData'] ?? e)))
           .toList()
         : null,
+      _warningCount = (json['warningCount'] as num?)?.toInt(),
+      _isBanned = json['isBanned'],
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'owner': _owner, 'name': _name, 'email': _email, 'gender': _gender, 'isAvailableNow': _isAvailableNow, 'availabilitySchedule': _availabilitySchedule?.map((AvailabilitySlot? e) => e?.toJson()).toList(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'owner': _owner, 'name': _name, 'email': _email, 'gender': _gender, 'isAvailableNow': _isAvailableNow, 'availabilitySchedule': _availabilitySchedule?.map((AvailabilitySlot? e) => e?.toJson()).toList(), 'warningCount': _warningCount, 'isBanned': _isBanned, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
@@ -219,6 +243,8 @@ class Volunteer extends amplify_core.Model {
     'gender': _gender,
     'isAvailableNow': _isAvailableNow,
     'availabilitySchedule': _availabilitySchedule,
+    'warningCount': _warningCount,
+    'isBanned': _isBanned,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
@@ -231,6 +257,8 @@ class Volunteer extends amplify_core.Model {
   static final GENDER = amplify_core.QueryField(fieldName: "gender");
   static final ISAVAILABLENOW = amplify_core.QueryField(fieldName: "isAvailableNow");
   static final AVAILABILITYSCHEDULE = amplify_core.QueryField(fieldName: "availabilitySchedule");
+  static final WARNINGCOUNT = amplify_core.QueryField(fieldName: "warningCount");
+  static final ISBANNED = amplify_core.QueryField(fieldName: "isBanned");
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "Volunteer";
     modelSchemaDefinition.pluralName = "Volunteers";
@@ -250,6 +278,17 @@ class Volunteer extends amplify_core.Model {
         authStrategy: amplify_core.AuthStrategy.PUBLIC,
         operations: const [
           amplify_core.ModelOperation.READ
+        ]),
+      amplify_core.AuthRule(
+        authStrategy: amplify_core.AuthStrategy.GROUPS,
+        groupClaim: "cognito:groups",
+        groups: [ "Admins" ],
+        provider: amplify_core.AuthRuleProvider.USERPOOLS,
+        operations: const [
+          amplify_core.ModelOperation.CREATE,
+          amplify_core.ModelOperation.READ,
+          amplify_core.ModelOperation.UPDATE,
+          amplify_core.ModelOperation.DELETE
         ])
     ];
     
@@ -294,6 +333,18 @@ class Volunteer extends amplify_core.Model {
       isRequired: false,
       isArray: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.embeddedCollection, ofCustomTypeName: 'AvailabilitySlot')
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: Volunteer.WARNINGCOUNT,
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.int)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: Volunteer.ISBANNED,
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.bool)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.nonQueryField(

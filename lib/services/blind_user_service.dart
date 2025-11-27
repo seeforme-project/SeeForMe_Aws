@@ -14,21 +14,14 @@ class BlindUserService {
     try {
       if (Platform.isAndroid) {
         AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        // Combine Brand + Model + Build ID to make it more unique on Android
-        // Example: samsung_SM-G960F_UP1A.231005.007
         uuid = '${androidInfo.brand}_${androidInfo.model}_${androidInfo.id}';
       } else if (Platform.isIOS) {
         IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        // Identifier for Vendor is unique to the device for your app
         uuid = iosInfo.identifierForVendor ?? "ios_unknown";
       }
 
-      // Sanitize ID (remove spaces and special chars)
       uuid = uuid.replaceAll(RegExp(r'[^a-zA-Z0-9-_]'), '_');
-
       safePrint("📱 Hardware Blind Device ID: $uuid");
-
-      // Ensure DB record exists
       await _createBlindUserRecord(uuid);
 
     } catch (e) {
@@ -40,7 +33,6 @@ class BlindUserService {
   // 2. Silently create the record in DynamoDB
   static Future<void> _createBlindUserRecord(String uuid) async {
     try {
-      // Check if user already exists to prevent errors
       final exists = await _fetchBlindUser(uuid);
       if (exists != null) return;
 
@@ -71,8 +63,6 @@ class BlindUserService {
   // 3. Add a Volunteer to Trusted List
   static Future<void> addTrustedVolunteer(String volunteerId) async {
     final userId = await getDeviceId();
-    safePrint("🔵 Attempting to link Volunteer: $volunteerId to User: $userId");
-
     try {
       final currentUser = await _fetchBlindUser(userId);
       List<String> currentList = [];
@@ -105,11 +95,7 @@ class BlindUserService {
 
         if (res.hasErrors) {
           safePrint("❌ Error updating trusted list: ${res.errors}");
-        } else {
-          safePrint("✅ Success! Volunteer $volunteerId added to trusted list.");
         }
-      } else {
-        safePrint("ℹ️ Volunteer already in trusted list.");
       }
     } catch (e) {
       safePrint("Error adding trusted volunteer: $e");
@@ -198,12 +184,92 @@ class BlindUserService {
 
       if (userRecord != null && userRecord['trustedVolunteerIds'] != null) {
         List<dynamic> trustedList = userRecord['trustedVolunteerIds'];
-        // Check if the list contains the ID
         return trustedList.contains(volunteerId);
       }
     } catch (e) {
       safePrint("Error checking trust status: $e");
     }
     return false;
+  }
+
+  // --- UPDATED STATUS CHECK ---
+  static Future<Map<String, dynamic>> checkUserStatus() async {
+    final deviceId = await getDeviceId();
+
+    try {
+      const String query = r'''
+        query GetBlindUser($id: ID!) {
+          getBlindUser(id: $id) {
+            id
+            isBanned
+            adminWarningMessage
+            adminWarningAcknowledged
+          }
+        }
+      ''';
+
+      final request = GraphQLRequest<String>(
+        document: query,
+        variables: {'id': deviceId},
+        authorizationMode: APIAuthorizationType.apiKey,
+      );
+
+      final response = await Amplify.API.query(request: request).response;
+
+      if (response.data != null) {
+        final data = jsonDecode(response.data!);
+        if (data['getBlindUser'] != null) {
+          return data['getBlindUser'];
+        }
+      }
+    } catch (e) {
+      safePrint("Error checking user status: $e");
+    }
+
+    return {
+      'isBanned': false,
+      'adminWarningMessage': null,
+      'adminWarningAcknowledged': true
+    };
+  }
+
+  // --- UPDATED CLEAR WARNING ---
+  static Future<bool> clearWarningMessage() async {
+    final deviceId = await getDeviceId();
+    safePrint("Attempting to acknowledge warning for: $deviceId");
+
+    try {
+      // Sets boolean to true instead of deleting message
+      const String mutation = r'''
+        mutation AcknowledgeWarning($id: ID!) {
+          updateBlindUser(input: {
+            id: $id, 
+            adminWarningAcknowledged: true
+          }) {
+            id
+            adminWarningAcknowledged
+          }
+        }
+      ''';
+
+      final request = GraphQLRequest<String>(
+        document: mutation,
+        variables: {'id': deviceId},
+        authorizationMode: APIAuthorizationType.apiKey,
+      );
+
+      final response = await Amplify.API.mutate(request: request).response;
+
+      if (response.hasErrors) {
+        safePrint("❌ Error acknowledging warning: ${response.errors}");
+        return false;
+      }
+
+      safePrint("✅ Warning acknowledged successfully.");
+      return true;
+    } catch (e) {
+      safePrint("❌ Exception acknowledging warning: $e");
+      return false;
+    }
   }
 }

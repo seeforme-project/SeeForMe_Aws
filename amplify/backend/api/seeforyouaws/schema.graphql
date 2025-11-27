@@ -24,6 +24,9 @@ type Volunteer @model @auth(rules: [
 
   isAvailableNow: Boolean
   availabilitySchedule: [AvailabilitySlot]
+
+  warningCount: Int
+  isBanned: Boolean
 }
 
 
@@ -83,9 +86,33 @@ type BlindUser @model @auth(rules: [
   # Allow public (Guest) to create/read/update their own record via API Key
   { allow: public, provider: apiKey, operations: [create, read, update] }
   # Allow admins to manage
-  { allow: groups, groups: ["Admins"], operations: [read, delete] }
+  { allow: groups, groups: ["Admins"], operations: [read, delete, update] }
 ]) {
   id: ID! @primaryKey # This will be the Device UUID
   trustedVolunteerIds: [String] # A list of IDs of volunteers they trust
 
+  isBanned: Boolean
+  adminWarningMessage: String # If not null, read this out loud
+  adminWarningAcknowledged: Boolean
+
+}
+
+type Notification @model @auth(rules: [
+  # Admin creates them, User (Volunteer) reads them
+  { allow: groups, groups: ["Admins"], operations: [create, read, update, delete] },
+  { allow: owner, ownerField: "userId", operations: [read, update] }
+]) {
+  id: ID!
+  userId: ID! @index(name: "byUser") # The Volunteer's ID
+  title: String!   # e.g., "Conduct Warning"
+  message: String! # e.g., "We received a report about..."
+  type: NotificationType!
+  isRead: Boolean  # To show red dot
+  createdAt: AWSDateTime
+}
+
+enum NotificationType {
+  WARNING
+  INFO
+  BAN_NOTICE
 }
