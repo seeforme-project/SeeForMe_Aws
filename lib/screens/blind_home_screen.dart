@@ -69,8 +69,7 @@ class _BlindHomeScreenState extends State<BlindHomeScreen> {
       if (!mounted) return;
 
       // Navigate to video call screen
-      Navigator.of(context)
-          .push(
+      Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => VideoCallScreen(
             channelName: channelName,
@@ -79,10 +78,7 @@ class _BlindHomeScreenState extends State<BlindHomeScreen> {
             callId: _currentCallId!,
           ),
         ),
-      )
-          .then((_) {
-        _endCall();
-      });
+      );
     } catch (e) {
       safePrint('Error requesting assistance: $e');
       if (mounted) {
@@ -207,3 +203,4 @@ class _BlindHomeScreenState extends State<BlindHomeScreen> {
     );
   }
 }
+

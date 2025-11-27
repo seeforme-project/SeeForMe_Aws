@@ -11,6 +11,7 @@ type Volunteer @model @auth(rules: [
   # and that owner can create, read, and update their own records.
   { allow: owner, operations: [create, read, update] }
   { allow: public, operations: [read] }
+  { allow: groups, groups: ["Admins"], operations: [create, read, update, delete] }
 ]) {
   id: ID!
   # We add the "owner" field and link it to the id field.
@@ -86,5 +87,5 @@ type BlindUser @model @auth(rules: [
 ]) {
   id: ID! @primaryKey # This will be the Device UUID
   trustedVolunteerIds: [String] # A list of IDs of volunteers they trust
-  
+
 }

@@ -34,9 +34,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   @override
   void initState() {
     super.initState();
+    // Configure TTS to wait for speech to finish before moving to next code line
+    _configureTts();
+
     if (widget.isBlindUser) {
       _initBlindFeedback();
     }
+  }
+
+  Future<void> _configureTts() async {
+    // This is the key fix: It makes 'await speak()' actually wait for the voice to finish
+    await _flutterTts.awaitSpeakCompletion(true);
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setPitch(1.0);
   }
 
   @override
@@ -47,11 +57,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _initBlindFeedback() async {
+    // 1. Stop any lingering audio from previous screen
     await _flutterTts.stop();
-    await Future.delayed(const Duration(milliseconds: 500));
 
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(1.0);
+    // 2. Add a longer delay to ensure the audio channel is clear (Fixes "two voices stutter")
+    await Future.delayed(const Duration(seconds: 1));
 
     bool isAlreadyTrusted = false;
 
@@ -66,6 +76,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       instructions += " Long press to add this volunteer to your Trusted Emergency List.";
     }
 
+    // This will now wait until instructions are done before doing anything else
     await _flutterTts.speak(instructions);
   }
 
@@ -76,13 +87,26 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
     _tapTimer = Timer(const Duration(milliseconds: 600), () async {
       if (_tapCount == 2) {
+        // Stop instructions if they are still playing
         await _flutterTts.stop();
+
+        // Speak and WAIT for completion
         await _flutterTts.speak("Rated five stars. Thank you.");
-        _submitReport("GOOD_EXPERIENCE", "User rated via gesture");
+
+        // Only then submit and close
+        if (mounted) {
+          _submitReport("GOOD_EXPERIENCE", "User rated via gesture");
+        }
       } else if (_tapCount == 3) {
         await _flutterTts.stop();
+
+        // Speak and WAIT for completion
         await _flutterTts.speak("Report submitted. Admin will review.");
-        _submitReport("SAFETY_CONCERN", "Blind user reported issue via gesture");
+
+        // Only then submit and close
+        if (mounted) {
+          _submitReport("SAFETY_CONCERN", "Blind user reported issue via gesture");
+        }
       }
       _tapCount = 0;
     });
@@ -90,6 +114,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   Future<void> _addToTrusted() async {
     HapticFeedback.mediumImpact();
+
+    await _flutterTts.stop();
 
     if (widget.volunteerId == null) {
       await _flutterTts.speak("Sorry, I cannot identify the volunteer.");
@@ -101,17 +127,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     if (isTrusted) {
       await _flutterTts.speak("This volunteer is already in your trusted list.");
     } else {
+      // Just speak, no need to stop previous here as we did above
       await _flutterTts.speak("Adding volunteer to your trusted list...");
+
       await BlindUserService.addTrustedVolunteer(widget.volunteerId!);
+
       await _flutterTts.speak("Volunteer added to your trusted emergency list.");
     }
   }
+
   Future<void> _submitReport(String category, String description) async {
     setState(() => _isSubmitting = true);
     try {
       const String mutation = r'''mutation CreateReport($input: CreateReportInput!) { createReport(input: $input) { id status } }''';
       final request = GraphQLRequest<String>(document: mutation, variables: {'input': {'callId': widget.callId, 'reportedBy': widget.isBlindUser ? 'BLIND' : 'VOLUNTEER', 'category': category, 'description': description, 'status': 'OPEN'}}, authorizationMode: APIAuthorizationType.apiKey);
       await Amplify.API.mutate(request: request).response;
+
       if (mounted) {
         if (!widget.isBlindUser) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Feedback Submitted!')));
         Navigator.of(context).popUntil((route) => route.isFirst);
